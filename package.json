@@ -1,0 +1,64 @@
+{
+    "name": "cash-out-gaming-e-sports-arena",
+    "version": "1.0.0",
+    "description": "#1 Place to Play.",
+    "main": "index.js",
+    "scripts": {
+    "start": "node index.js",
+    "test": "mocha"
+    },
+    "dependencies": {
+    "express": "^4.17.1",
+    "another-package": "^2.0.0"
+    },
+    "devDependencies": {
+    "mocha": "^9.0.0",
+    "chai": "^4.3.4"
+    },
+    "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jonvthvn90/Cash-Out-Gaming-Website.git"
+    },
+    "keywords": ["node", "express", "example"],
+    "author": "Your Name <email@example.com> (https://example.com)",
+    "license": "MIT",
+    "bugs": {
+    "url": "https://github.com/jonvthvn90/Cash-Out-Gaming-Website/issues"
+    },
+    "homepage": "https://github.com/jonvthvn90/Cash-Out-Gaming-Website",
+    "engines": {
+    "node": ">=14.0.0"
+    },
+    "private": false,
+    "browser": {
+    "fs": false
+    },
+    "files": [
+    "lib",
+    "dist"
+    ],
+    "config": {
+    "commitizen": {
+        "path": "./node_modules/cz-conventional-changes"
+    }
+    },
+    " Husky": {
+    "hooks": {
+        "pre-commit": "npm test"
+    }
+    },
+    "lint-staged": {
+    "*.js": ["npm run lint", "git add"]
+    },
+    "babel": {
+    "presets": ["@babel/preset-env"]
+    },
+    "eslintConfig": {
+    "extends": ["eslint:recommended", "plugin:node/recommended"]
+    },
+    "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+    ]
+}
