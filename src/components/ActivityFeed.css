@@ -1,0 +1,103 @@
+.activity-feed {
+    background-color: #1c1c1c; /* Dark background like the image */
+    color: #fff; /* White text for high contrast */
+    font-family: 'Press Start 2P', cursive; /* Pixelated font to match the gaming theme */
+    padding: 20px;
+    max-width: 1200px; /* Wider for better display */
+    margin: auto;
+}
+
+.activity-feed h1 {
+    text-align: center;
+    color: #00ff00; /* Neon green for headers */
+    text-shadow: 2px 2px #000; /* Shadow for text emphasis */
+}
+
+.new-post-form {
+    background: #000;
+    border: 2px solid #ffd700; /* Gold border */
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.post-content, .media-type-select, .media-url {
+    background-color: #000;
+    color: #00ff00; /* Neon green text */
+    border: 1px solid #ffd700; /* Gold border */
+    padding: 10px;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.post-button {
+    background-color: #00ff00; /* Neon green button */
+    color: #000; /* Black text for contrast */
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.post-button:hover {
+    background-color: #00cc00; /* Darker green on hover */
+}
+
+.post {
+    background: #000; /* Black background for posts */
+    border: 1px solid #ffd700; /* Gold border */
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 0 10px #00ff00; /* Green glow effect */
+}
+
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.post-author {
+    font-weight: bold;
+    color: #ffd700; /* Gold color for the author name/*
+    }
+
+.post-date {
+    font-size: 0.9em;
+    color: #999;
+}
+
+.post-content {
+    margin-bottom: 15px;
+    font-size: 1em;
+    line-height: 1.5;
+}
+
+.post-media {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin-top: 15px;
+    box-shadow: 0 0 5px #00ff00; /* Glow effect for media */
+}
+
+video.post-media {
+    width: 100%;
+}
+
+audio.post-media {
+    width: 100%;
+}
+
+/* Add some effects for a more dynamic feel */
+@keyframes glow {
+    from { box-shadow: 0 0 10px #00ff00; }
+    to { box-shadow: 0 0 20px #00ff00; }
+}
+
+.post:hover {
+    animation: glow 1s infinite alternate;
+}
