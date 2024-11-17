@@ -1,25 +1,30 @@
 const User = require('../models/User');
 const Match = require('../models/Match');
-const { calculateElo } = require('../utils/eloCalculator'); // Assuming you have an Elo calculator utility
+const { calculateElo } = require('../utils/eloCalculator');
 
 module.exports = {
+    /**
+     * Matches a user with another user based on skill level and preferences.
+     * @param {string} userId - The ID of the user looking for a match.
+     * @param {number} skillLevel - Skill level of the user.
+     * @param {Object} [preferences={}] - The user's game preferences.
+     * @returns {Promise<Match|null>} - The created match or null if no match found.
+     */
     async matchUser(userId, skillLevel, preferences = {}) {
         try {
-            // Find other users that are looking for a match and match the criteria
             const potentialOpponents = await User.find({
                 isOnline: true,
                 _id: { $ne: userId },
-                skillLevel: { $gte: skillLevel - 100, $lte: skillLevel + 100 } // Example range for matching skill
-            }).where('preferences').in(Object.keys(preferences));
+                skillLevel: { $gte: skillLevel - 100, $lte: skillLevel + 100 }, // Skill level range for matching
+                preferences: { $all: Object.keys(preferences) } // Match all preferences
+            }).limit(100); // Limit search to avoid performance issues
 
             if (potentialOpponents.length === 0) {
                 return null; // No match found
             }
 
-            // Randomly select an opponent from those available
             const opponent = potentialOpponents[Math.floor(Math.random() * potentialOpponents.length)];
 
-            // Create a new match
             const newMatch = new Match({
                 players: [userId, opponent._id],
                 status: 'active'
@@ -33,6 +38,13 @@ module.exports = {
         }
     },
 
+    /**
+     * Updates the result of a match including Elo calculation.
+     * @param {string} matchId - The ID of the match to update.
+     * @param {string} winningUserId - The ID of the winning user.
+     * @param {string} losingUserId - The ID of the losing user.
+     * @returns {Promise<Match>} - The updated match document.
+     */
     async updateMatchResult(matchId, winningUserId, losingUserId) {
         try {
             const match = await Match.findById(matchId);
@@ -45,9 +57,6 @@ module.exports = {
             match.winner = winningUserId;
             match.loser = losingUserId;
 
-            // Update Elo for both players
-            await match.save();
-
             // Calculate new Elo ratings
             const winner = await User.findById(winningUserId);
             const loser = await User.findById(losingUserId);
@@ -58,8 +67,7 @@ module.exports = {
             winner.skillLevel = newWinnerElo;
             loser.skillLevel = newLoserElo;
 
-            await winner.save();
-            await loser.save();
+            await Promise.all([match.save(), winner.save(), loser.save()]);
 
             return match;
         } catch (error) {
@@ -67,19 +75,26 @@ module.exports = {
         }
     },
 
-    async getMatchHistory(userId) {
+    /**
+     * Retrieves the match history for a user.
+     * @param {string} userId - The ID of the user whose history is to be fetched.
+     * @param {number} [limit=10] - The number of matches to return.
+     * @param {number} [skip=0] - The number of matches to skip for pagination.
+     * @returns {Promise<Match[]>} - An array of Match objects.
+     */
+    async getMatchHistory(userId, limit = 10, skip = 0) {
         try {
-            // Fetch all matches where the user was involved, either as winner or loser
             const matches = await Match.find({
                 $or: [
                     { winner: userId },
                     { loser: userId },
-                    { players: userId } // For ongoing or matches where the user played but didn't win or lose yet
+                    { players: userId }
                 ]
-            }).sort({ createdAt: -1 }); // Sort by most recent
-
-            // Optionally you can populate with user information if needed
-            // .populate('winner loser', 'username skillLevel')
+            })
+            .populate('winner loser', 'username')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
 
             return matches;
         } catch (error) {

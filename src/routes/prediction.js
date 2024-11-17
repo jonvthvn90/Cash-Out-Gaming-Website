@@ -85,7 +85,7 @@ router.get('/leaderboard', async (req, res) => {
             { $limit: 10 } // Top 10
         ]);
 
-        const users = await User.find().where('_id').in(leaderboard.map(l => l._id)).lean();
+        const users = await User.find({ _id: { $in: leaderboard.map(l => l._id) } }).lean();
         const userMap = new Map(users.map(user => [user._id.toString(), user]));
 
         const formattedLeaderboard = leaderboard.map(entry => ({

@@ -2,12 +2,14 @@ const express = require('express');
 const router = express.Router();
 const Bet = require('../models/Bet');
 const User = require('../models/User');
-const Match = require('../models/Match'); // Assuming you have a Match model
+const Match = require('../models/Match');
 
 // Place a bet
 router.post('/', async (req, res) => {
     try {
         const { matchId, amount, winnerId } = req.body;
+        
+        // Check if the match exists and is scheduled for betting
         const match = await Match.findById(matchId);
         if (!match || match.status !== 'scheduled') {
             return res.status(400).json({ message: 'Match is not available for betting.' });
@@ -18,8 +20,8 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ message: 'Insufficient funds.' });
         }
 
-        // Odds logic would go here, for simplicity, we'll use a fixed odds
-        const odds = 2; // Example odds
+        // Odds logic (for simplicity, we're using fixed odds)
+        const odds = calculateOdds(match); // Assume this function exists elsewhere or you define it here
 
         const bet = new Bet({
             user: user._id,
@@ -37,9 +39,16 @@ router.post('/', async (req, res) => {
 
         res.status(201).json({ message: 'Bet placed successfully', bet });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        console.error("Error placing bet:", error);
+        res.status(400).json({ message: "An error occurred while placing the bet." });
     }
 });
+
+// Function to calculate odds (placeholder)
+function calculateOdds(match) {
+    // This would be replaced with actual odds calculation logic
+    return 2;  // Example odds
+}
 
 // Resolve bets after match ends
 router.post('/resolve/:matchId', async (req, res) => {
@@ -70,7 +79,8 @@ router.post('/resolve/:matchId', async (req, res) => {
 
         res.json({ message: 'Bets resolved', resolvedBets: bets });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        console.error("Error resolving bets:", error);
+        res.status(500).json({ message: "Error resolving bets." });
     }
 });
 
@@ -84,7 +94,8 @@ router.get('/history', async (req, res) => {
 
         res.json(bets);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        console.error("Error fetching betting history:", error);
+        res.status(500).json({ message: "Error fetching betting history." });
     }
 });
 

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import React from 'react';
 import RematchRequest from './RematchRequest';
 import RematchResponse from './RematchResponse';
+import PropTypes from 'prop-types';
+
 function ChallengeItem({ challenge }) {
     return (
-        <li>
+        <li className="challenge-item">
             <h4>{challenge.game} - {challenge.status}</h4>
             {challenge.status === 'completed' && (
                 <RematchRequest challengeId={challenge._id} />
@@ -17,71 +18,76 @@ function ChallengeItem({ challenge }) {
     );
 }
 
+ChallengeItem.propTypes = {
+    challenge: PropTypes.shape({
+        _id: PropTypes.string.isRequired,
+        game: PropTypes.string.isRequired,
+        status: PropTypes.string.isRequired,
+        isRematch: PropTypes.bool
+    }).isRequired
+};
 
 function MatchHistory({ userId }) {
-    const[matches, setMatches] = useState([]);
+    const [matches, setMatches] = useState([]);
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchMatchHistory();
-    },[userId]);
+        const fetchMatchAndChallengeHistory = async () => {
+            try {
+                const [matchResponse, challengeResponse] = await Promise.all([
+                    axios.get(`/api/users/${userId}/matchHistory`, {
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                    }),
+                    axios.get('/api/challenges', {
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                    })
+                ]);
 
-    const fetchMatchHistory = async () => {
-        try {
-            const response = await axios.get(`/api/users/${userId}/matchHistory`);
-            setMatches(response.data);
-        } catch (error) {
-            console.error('Error fetching match history:', error);
-            alert('Failed to fetch match history.');
+                setMatches([...matchResponse.data, ...challengeResponse.data]);
+            } catch (error) {
+                setError('Failed to fetch match or challenge history.');
+                console.error('Error fetching match or challenge history:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (userId) {
+            fetchMatchAndChallengeHistory();
         }
-    };
+    }, [userId]);
+
+    if (loading) return <div>Loading match history...</div>;
+    if (error) return <div>{error}</div>;
 
     return (
-        <div>
-            <h3>Match History</h3>
-            <ul>
+        <div className="match-history">
+            <h2>Match History</h2>
+            <ul className="history-list">
                 {matches.map(match => (
-                    <li key={match._id}>
+                    <li key={match._id} className={match.result ? 'completed-match' : 'challenge-item'}>
                         {match.game} - Status: {match.status}
                         {match.result && (
-                            <span>
-                                , Winner: {match.result.winner}, Scores: {JSON.stringify(match.result.scores)}
+                            <span className="match-result">
+                                , Winner: {match.result.winner}, Scores: {match.result.scores.player1} - {match.result.scores.player2}
                             </span>
+                        )}
+                        {match.status === 'completed' && (
+                            <RematchRequest challengeId={match._id} />
+                        )}
+                        {match.isRematch && match.status === 'pending' && (
+                            <RematchResponse rematchId={match._id} />
                         )}
                     </li>
                 ))}
             </ul>
         </div>
     );
-    
 }
-function MatchHistory() {
-    const[challenges, setChallenges] = useState([]);
 
-    useEffect(() => {
-        const fetchChallenges = async () => {
-            try {
-                const response = await axios.get('/api/challenges', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
-                setChallenges(response.data);
-            } catch (error) {
-                console.error('Error fetching challenges:', error);
-            }
-        };
-
-        fetchChallenges();
-    }, []);
-
-    return (
-        <div>
-            <h2>Match History</h2>
-            <ul>
-                {challenges.map(challenge => (
-                    <ChallengeItem key={challenge._id} challenge={challenge} />
-                ))}
-            </ul>
-        </div>
-    );
-}
+MatchHistory.propTypes = {
+    userId: PropTypes.string.isRequired
+};
 
 export default MatchHistory;
-
-

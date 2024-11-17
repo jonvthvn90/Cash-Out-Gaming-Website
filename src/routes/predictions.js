@@ -19,8 +19,8 @@ router.post('/', async (req, res) => {
             predictedWinner,
             predictedScore
         });
-        await prediction.save();
 
+        await prediction.save();
         res.status(201).json({ message: 'Prediction made successfully', prediction });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -39,16 +39,20 @@ router.post('/resolve/:matchId', async (req, res) => {
 
         for (let prediction of predictions) {
             let points = 0;
+            
+            // Check if the prediction for the winner is correct
             if (prediction.predictedWinner.toString() === match.winner._id.toString()) {
                 points += 10; // Points for correctly predicting the winner
             }
 
-            // Additional points for correctly predicting the score
-            if (prediction.predictedScore.player1 === match.score.player1 && 
+            // Check if the score prediction is correct
+            if (prediction.predictedScore && 
+                prediction.predictedScore.player1 === match.score.player1 && 
                 prediction.predictedScore.player2 === match.score.player2) {
-                points += 20;
+                points += 20; // Additional points for exact score prediction
             }
 
+            // Update prediction with points and status
             prediction.points = points;
             prediction.status = points > 0 ? 'correct' : 'incorrect';
             await prediction.save();

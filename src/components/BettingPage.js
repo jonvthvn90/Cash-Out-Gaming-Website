@@ -10,7 +10,7 @@ const BettingPage = () => {
     const [selectedMatch, setSelectedMatch] = useState(null);
     const [selectedChoice, setSelectedChoice] = useState('');
     const [odds, setOdds] = useState(1); // This would typically come from backend
-    const { user } = useUser();
+    const { user, updateUser } = useUser();
 
     useEffect(() => {
         fetchUpcomingMatches();
@@ -18,7 +18,6 @@ const BettingPage = () => {
 
     const fetchUpcomingMatches = async () => {
         try {
-            // Assuming there's an endpoint for fetching upcoming matches
             const response = await axios.get('/api/matches/upcoming', {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
@@ -31,23 +30,30 @@ const BettingPage = () => {
     };
 
     const placeBet = async () => {
-        if (!selectedMatch || !selectedChoice || !betAmount) {
-            setError('Please select a match, choose an outcome, and enter a bet amount');
+        if (!selectedMatch || !selectedChoice || !betAmount || isNaN(betAmount) || betAmount <= 0) {
+            setError('Please select a match, choose an outcome, and enter a valid bet amount');
             return;
         }
 
         try {
-            await axios.post('/api/betting/place', {
+            const response = await axios.post('/api/betting/place', {
                 matchId: selectedMatch._id,
                 amount: parseFloat(betAmount),
                 choice: selectedChoice,
-                odds
+                odds: odds // Sending odds, assuming the backend will use this for payout calculations
             }, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
+            
+            if (response.data.newBalance) {
+                // Update user balance in the context if available
+                updateUser({ ...user, balance: response.data.newBalance });
+            }
+
             alert('Bet placed successfully!');
-            fetchUpcomingMatches(); // Refresh matches
+            fetchUpcomingMatches(); // Refresh matches list
             setBetAmount(''); // Clear the bet amount
+            setSelectedChoice(''); // Reset selected choice
         } catch (error) {
             setError(error.response?.data?.message || 'An error occurred while placing the bet');
         }
@@ -59,10 +65,15 @@ const BettingPage = () => {
     return (
         <div className="betting-page">
             <h2>Place Your Bets</h2>
-            <select onChange={(e) => setSelectedMatch(JSON.parse(e.target.value))} defaultValue="">
-                <option value="" disabled>Select a Match</option>
+            <select 
+                onChange={(e) => setSelectedMatch(JSON.parse(e.target.value))}
+                value={selectedMatch ? JSON.stringify(selectedMatch) : ""}
+            >
+                <option value="">Select a Match</option>
                 {matches.map(match => (
-                    <option key={match._id} value={JSON.stringify(match)}>{match.teamA.name} vs {match.teamB.name}</option>
+                    <option key={match._id} value={JSON.stringify(match)}>
+                        {match.teamA.name} vs {match.teamB.name}
+                    </option>
                 ))}
             </select>
 
@@ -75,14 +86,20 @@ const BettingPage = () => {
                         onChange={(e) => setBetAmount(e.target.value)} 
                         placeholder="Enter bet amount"
                         min="1"
+                        step="0.01" // Allows for decimal amounts
                     />
-                    <select onChange={(e) => setSelectedChoice(e.target.value)} defaultValue="">
+                    <select 
+                        onChange={(e) => setSelectedChoice(e.target.value)}
+                        value={selectedChoice}
+                    >
                         <option value="" disabled>Choose Outcome</option>
                         <option value="teamA">{selectedMatch.teamA.name} wins</option>
                         <option value="teamB">{selectedMatch.teamB.name} wins</option>
                         <option value="draw">Draw</option>
                     </select>
-                    <button onClick={placeBet}>Place Bet</button>
+                    <button onClick={placeBet} disabled={!betAmount || !selectedChoice}>
+                        Place Bet
+                    </button>
                 </div>
             )}
 

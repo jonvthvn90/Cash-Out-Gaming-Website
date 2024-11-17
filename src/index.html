@@ -6,6 +6,20 @@
     <title>Cash Out Gaming</title>
     <link rel="stylesheet" href="styles.css">
     <script src="script.js" defer></script>
+    <style>
+        .banner {
+            background-image: url('path/to/your/cashoutgaming-banner.jpg');
+            background-size: cover;
+            background-position: center;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            font-size: 2em;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -14,18 +28,28 @@
             <ul>
                 <li><a href="#home" class="neon-button">Home</a></li>
                 <li><a href="#about" class="neon-button">About</a></li>
+                <li><a href="#features" class="neon-button">Features</a></li> <!-- New section -->
                 <li><a href="#contact" class="neon-button">Contact</a></li>
             </ul>
         </nav>
     </header>
     <main>
-        <section id="home" class="section">
+        <section id="home" class="section banner">
             <h2>Welcome to Cash Out Gaming</h2>
             <p>Experience the thrill of gaming like never before.</p>
         </section>
         <section id="about" class="section">
             <h2>About Us</h2>
             <p>We're at the forefront of gaming innovation, bringing you the latest in gaming technology and experiences.</p>
+        </section>
+        <section id="features" class="section">
+            <h2>Our Features</h2>
+            <ul>
+                <li>Real-time multiplayer gaming</li>
+                <li>Cash out your winnings instantly</li>
+                <li>Wide selection of games</li>
+                <li>Secure and fair gameplay</li>
+            </ul>
         </section>
         <section id="contact" class="section">
             <h2>Get in Touch</h2>
@@ -38,7 +62,31 @@
         </section>
     </main>
     <footer>
-        <p>&copy; 2024 Cash Out Gaming. All rights reserved.</p>
+        <p>© 2024 Cash Out Gaming. All rights reserved.</p>
     </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => {
+                section.style.opacity = '0';
+                section.style.transition = 'opacity 1s ease-in-out';
+            });
+
+            window.addEventListener('scroll', () => {
+                sections.forEach(section => {
+                    const sectionTop = section.getBoundingClientRect().top;
+                    const sectionBottom = section.getBoundingClientRect().bottom;
+                    const windowHeight = window.innerHeight;
+
+                    if (sectionTop < windowHeight && sectionBottom > 0) {
+                        section.style.opacity = '1';
+                    } else {
+                        section.style.opacity = '0.2';
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

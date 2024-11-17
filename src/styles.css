@@ -1,3 +1,5 @@
+/* styles.css */
+
 body {
     font-family: 'Arial', sans-serif;
     margin: 0;
@@ -21,7 +23,7 @@ header {
 
 @keyframes neonBlink {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.    0.5; }
+    50% { opacity: 0.5; }
 }
 
 .game-nav ul {
@@ -73,6 +75,9 @@ header {
 .section {
     padding: 50px 20px;
     text-align: center;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 1s, transform 1s;
 }
 
 form {
@@ -111,20 +116,13 @@ form input::placeholder, form textarea::placeholder {
 }
 
 footer {
-    background: #1a1a1a1a;
+    background: #1a1a1a;
     text-align: center;
     padding: 10px 0;
     position: fixed;
     width: 100%;
     bottom: 0;
-    background: #000;
-}
-
-/* Additional animations for sections */
-.section {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 1s, transform 1s;
+    z-index: 1; /* Ensure footer stays on top */
 }
 
 .section.visible {

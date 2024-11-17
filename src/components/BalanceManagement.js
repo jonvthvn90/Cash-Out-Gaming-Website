@@ -3,11 +3,12 @@ import axios from 'axios';
 import { useUser } from '../context/UserContext';
 
 function BalanceManagement() {
-    const[balance, setBalance] = useState(0);
-    const[amount, setAmount] = useState('');
-    const[error, setError] = useState('');
+    const [balance, setBalance] = useState(0);
+    const [amount, setAmount] = useState('');
+    const [error, setError] = useState('');
     const { user } = useUser();
 
+    // Fetch user balance when the user logs in or component mounts
     useEffect(() => {
         const fetchBalance = async () => {
             try {
@@ -25,31 +26,41 @@ function BalanceManagement() {
         }
     }, [user]);
 
+    // Handle deposit functionality
     const handleDeposit = async () => {
         try {
+            if (!amount || isNaN(parseFloat(amount))) {
+                throw new Error('Please enter a valid amount');
+            }
             const response = await axios.post('/api/users/deposit', { amount: parseFloat(amount) }, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             setBalance(response.data.balance);
             setAmount('');
+            setError(''); // Clear any previous error
         } catch (error) {
-            setError(error.response?.data?.message || 'Deposit failed');
+            setError(error.response?.data?.message || error.message || 'Deposit failed');
         }
     };
 
+    // Handle withdrawal functionality
     const handleWithdraw = async () => {
         try {
+            if (!amount || isNaN(parseFloat(amount))) {
+                throw new Error('Please enter a valid amount');
+            }
             const response = await axios.post('/api/users/withdraw', { amount: parseFloat(amount) }, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             setBalance(response.data.balance);
             setAmount('');
+            setError(''); // Clear any previous error
         } catch (error) {
-            setError(error.response?.data?.message || 'Withdrawal failed');
+            setError(error.response?.data?.message || error.message || 'Withdrawal failed');
         }
     };
 
-    if (error) return <div>{error}</div>;
+    if (error) return <div>Error: {error}</div>;
 
     return (
         <div>
@@ -61,8 +72,8 @@ function BalanceManagement() {
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Amount"
             />
-            <button onClick={handleDeposit}>Deposit</button>
-            <button onClick={handleWithdraw}>Withdraw</button>
+            <button onClick={handleDeposit} disabled={!amount}>Deposit</button>
+            <button onClick={handleWithdraw} disabled={!amount || balance < parseFloat(amount)}>Withdraw</button>
         </div>
     );
 }

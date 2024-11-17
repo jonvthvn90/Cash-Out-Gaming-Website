@@ -5,71 +5,34 @@ const io = require('socket.io')(server, {
     }
 });
 
+// Store connected user IDs
+let connectedUsers = new Set();
+
 io.on('connection', (socket) => {
     console.log('New client connected', socket.id);
 
+    // User joins their room
     socket.on('join', (userId) => {
         socket.join(userId);
+        connectedUsers.add(userId);
         console.log(`User ${userId} joined their room`);
     });
 
-    // Emit invitation
-    socket.on('challengeInvite', (challenge) => {
-        io.to(challenge.opponent).emit('challengeReceived', challenge);
-    });
-
-    // Handle challenge response
-    socket.on('challengeResponse', ({ challengeId, response }) => {
-        // Here you would update the challenge in the database
-        // Assuming you have a function to update challenge status
-        updateChallengeStatusInDB(challengeId, response).then(updatedChallenge => {
-            // Emit to both challenger and opponent
-            io.to(updatedChallenge.challenger).emit('challengeStatusUpdated', updatedChallenge);
-            io.to(updatedChallenge.opponent).emit('challengeStatusUpdated', updatedChallenge);
-        });
-    });
-
-    socket.on('disconnect', () => {
-        console.log('Client disconnected');
-    });
-});
-
-// Dummy function to represent database update
-async function updateChallengeStatusInDB(challengeId, status) {
-    // Your database logic here
-    return { _id: challengeId, status: status };
-}
-
-io.on('connection', (socket) => {
-    console.log('New client connected', socket.id);
-
-    socket.on('join', (userId) => {
-        socket.join(userId);
-    });
-
+    // User joins a game room
     socket.on('joinGame', (gameId) => {
         socket.join(gameId);
         console.log(`User joined game room: ${gameId}`);
     });
 
-    socket.on('updateGameState', ({ gameId, gameState }) => {
-        io.to(gameId).emit('gameStateUpdated', gameState);
-    });
-
-    // Handle challenge status updates as before ...
-
-    socket.on('disconnect', () => {
-        console.log('Client disconnected');
-    });
-});
-
-io.on('connection', (socket) => {
-    console.log('New client connected', socket.id);
-
-    // Joining a tournament room
+    // User joins a tournament room
     socket.on('joinTournament', (tournamentId) => {
         socket.join(tournamentId);
         console.log(`User joined tournament room: ${tournamentId}`);
+    });
+
+    // Game state update
+    socket.on('updateGameState', ({ gameId, gameState }) => {
+        io.to(gameId).emit('gameStateUpdated', gameState);
     });
 
     // Sending messages within a tournament
@@ -77,29 +40,13 @@ io.on('connection', (socket) => {
         io.to(tournamentId).emit('receiveMessage', message);
     });
 
-    // For disconnection
-    socket.on('disconnect', () => {
-        console.log('Client disconnected');
-    });
-});
-
-io.on('connection', (socket) => {
-    console.log('New client connected', socket.id);
-
-    // User joins their notification room
-    socket.on('join', (userId) => {
-        socket.join(userId);
-        console.log(`User ${userId} joined their notification room`);
-    });
-
-    // Challenge invitations
+    // Emit challenge invitation
     socket.on('challengeInvite', (challenge) => {
         io.to(challenge.opponent).emit('challengeReceived', challenge);
     });
 
+    // Handle challenge response
     socket.on('challengeResponse', ({ challengeId, response }) => {
-        // Here you would update the challenge in the database
-        // Assuming you have a function to update challenge status
         updateChallengeStatusInDB(challengeId, response).then(updatedChallenge => {
             io.to(updatedChallenge.challenger).emit('challengeStatusUpdated', updatedChallenge);
             io.to(updatedChallenge.opponent).emit('challengeStatusUpdated', updatedChallenge);
@@ -118,7 +65,14 @@ io.on('connection', (socket) => {
         io.to(userId).emit('transactionNotification', message);
     });
 
+    // Disconnection
     socket.on('disconnect', () => {
+        for (let [userId, socketId] of io.sockets.adapter.rooms) {
+            if (socketId === socket.id) {
+                connectedUsers.delete(userId);
+                break;
+            }
+        }
         console.log('Client disconnected');
     });
 });

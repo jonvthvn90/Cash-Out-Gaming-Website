@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useUser } from '../context/UserContext';
+import PropTypes from 'prop-types';
 
 const MatchPrediction = () => {
     const [matches, setMatches] = useState([]);
@@ -11,18 +12,20 @@ const MatchPrediction = () => {
     const { user } = useUser();
 
     useEffect(() => {
-        fetchUpcomingMatches();
-    }, []);
+        if (user) {
+            fetchUpcomingMatches();
+        }
+    }, [user]);
 
     const fetchUpcomingMatches = async () => {
         try {
-            // Assuming there's an endpoint for fetching upcoming matches
             const response = await axios.get('/api/matches/upcoming', {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             setMatches(response.data.matches);
         } catch (error) {
             setError('Failed to fetch upcoming matches');
+            console.error('Error fetching matches:', error);
         } finally {
             setLoading(false);
         }
@@ -39,19 +42,28 @@ const MatchPrediction = () => {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             alert('Prediction made successfully!');
-            setSelectedMatch(null); // Clear selection after prediction
+            setSelectedMatch(null);
+            setPrediction('teamA'); // Reset to default prediction
+            setError(null);
         } catch (error) {
             setError(error.response?.data?.message || 'An error occurred while making the prediction');
         }
     };
 
-    if (loading) return <div>Loading matches...</div>;
-    if (error) return <div>{error}</div>;
+    if (!user) {
+        return <div>Please log in to make predictions.</div>;
+    }
+
+    if (loading) return <div className="loading">Loading matches...</div>;
+    if (error) return <div className="error">{error}</div>;
 
     return (
         <div className="match-prediction">
             <h2>Make Your Predictions</h2>
-            <select onChange={(e) => setSelectedMatch(JSON.parse(e.target.value))} defaultValue="">
+            <select 
+                onChange={(e) => setSelectedMatch(JSON.parse(e.target.value))} 
+                value={selectedMatch ? JSON.stringify(selectedMatch) : ""}
+            >
                 <option value="" disabled>Select a Match</option>
                 {matches.map(match => (
                     <option key={match._id} value={JSON.stringify(match)}>{match.teamA.name} vs {match.teamB.name}</option>
@@ -59,7 +71,7 @@ const MatchPrediction = () => {
             </select>
 
             {selectedMatch && (
-                <div>
+                <div className="prediction-form">
                     <h3>{selectedMatch.teamA.name} vs {selectedMatch.teamB.name}</h3>
                     <div>
                         <label>
@@ -94,11 +106,17 @@ const MatchPrediction = () => {
                             Draw
                         </label>
                     </div>
-                    <button onClick={makePrediction}>Make Prediction</button>
+                    <button onClick={makePrediction} disabled={!selectedMatch}>Make Prediction</button>
                 </div>
             )}
         </div>
     );
+};
+
+MatchPrediction.propTypes = {
+    user: PropTypes.shape({
+        _id: PropTypes.string.isRequired
+    })
 };
 
 export default MatchPrediction;

@@ -14,28 +14,29 @@ router.get('/', async (req, res) => {
     try {
         const notifications = await Notification.find({ user: req.user._id })
             .sort({ createdAt: -1 })
-            .limit(20)
-            .lean(); // Using lean to get plain JavaScript objects instead of Mongoose documents
+            .limit(50) // Increased limit for better user experience
+            .lean()
+            .exec();
 
         res.json(notifications);
     } catch (error) {
         console.error('Error fetching notifications:', error);
-        res.status(500).json({ message: 'An error occurred while fetching notifications' });
+        res.status(500).json({ message: 'Server error while fetching notifications' });
     }
 });
 
 /**
  * Mark all notifications as read for the authenticated user
- * @route PUT /api/notifications/read
+ * @route PUT /api/notifications/read/all
  * @returns {Object} - Confirmation message
  */
-router.put('/read', async (req, res) => {
+router.put('/read/all', async (req, res) => {
     try {
-        await Notification.updateMany({ user: req.user._id }, { $set: { read: true } });
+        await Notification.updateMany({ user: req.user._id }, { $set: { read: true } }).exec();
         res.json({ message: 'All notifications marked as read' });
     } catch (error) {
         console.error('Error marking all notifications as read:', error);
-        res.status(500).json({ message: 'An error occurred while marking notifications as read' });
+        res.status(500).json({ message: 'Server error while marking notifications as read' });
     }
 });
 
@@ -47,42 +48,48 @@ router.put('/read', async (req, res) => {
  */
 router.put('/:notificationId/read', async (req, res) => {
     try {
-        const notification = await Notification.findByIdAndUpdate(req.params.notificationId, { read: true }, { new: true });
+        const notification = await Notification.findOneAndUpdate(
+            { _id: req.params.notificationId, user: req.user._id },
+            { read: true },
+            { new: true, lean: true }
+        ).exec();
+
         if (!notification) {
-            return res.status(404).json({ message: 'Notification not found' });
+            return res.status(404).json({ message: 'Notification not found or unauthorized' });
         }
+
         res.json({ message: 'Notification marked as read', notification });
     } catch (error) {
         console.error('Error marking notification as read:', error);
-        res.status(500).json({ message: 'An error occurred while marking the notification as read' });
+        res.status(500).json({ message: 'Server error while marking notification as read' });
     }
 });
 
 /**
- * Create a new notification (this might be called from other parts of your application)
- * @route POST /api/notifications/create
+ * Create a new notification 
+ * @route POST /api/notifications
  * @param {Object} req.body - Notification details including userId, type, content, and relatedObjectId
  * @returns {Object} - The newly created notification
  */
-router.post('/create', async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const { userId, type, content, relatedObjectId } = req.body;
         if (!userId || !type || !content) {
-            return res.status(400).json({ message: 'Missing required fields' });
+            return res.status(400).json({ message: 'Missing required fields: userId, type, or content' });
         }
 
         const notification = new Notification({
             user: userId,
-            type,
-            content,
-            relatedObjectId
+            type: type,
+            content: content,
+            relatedObjectId: relatedObjectId || null
         });
-        await notification.save();
 
-        res.status(201).json({ message: 'Notification created', notification });
+        const savedNotification = await notification.save();
+        res.status(201).json({ message: 'Notification created', notification: savedNotification });
     } catch (error) {
         console.error('Error creating notification:', error);
-        res.status(400).json({ message: 'An error occurred while creating the notification' });
+        res.status(400).json({ message: 'Error creating notification. Please check input' });
     }
 });
 

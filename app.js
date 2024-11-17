@@ -1,3 +1,5 @@
+// server.js
+
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -8,31 +10,39 @@ const apiRoutes = require('./routes/api');
 // Create Express app
 const app = express();
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// Middleware Configuration
+app.use(cors()); // Enable Cross-Origin Resource Sharing
+app.use(bodyParser.json()); // Parse JSON bodies
+app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
-// Connect to MongoDB
-mongoose.connect('mongodb://localhost/myapp', { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.log('Error connecting to MongoDB:', err));
+// Database Connection
+mongoose.connect('mongodb://localhost/myapp', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useCreateIndex: true // Use createIndex instead of deprecated ensureIndex
+})
+.then(() => console.log('Successfully connected to MongoDB'))
+.catch(err => console.error('Error connecting to MongoDB:', err));
 
-// Routes
+// API Routes
 app.use('/api', apiRoutes);
 
-// Serve static files from the React app
-app.use(express.static(path.join(__dirname, 'client/build')));
+// Production Environment Setup for Serving React App
+if (process.env.NODE_ENV === 'production') {
+    // Serve any static files
+    app.use(express.static(path.join(__dirname, 'client/build')));
 
-// The "catchall" handler: for any request that doesn't match one above, send back React's index.html file.
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
-});
+    // Handle React routing, return all requests to React app
+    app.get('*', function(req, res) {
+        res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+    });
+}
 
-// Start server
+// Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
+// Export app for testing purposes
 module.exports = app;

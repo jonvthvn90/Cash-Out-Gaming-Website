@@ -1,64 +1,79 @@
 {
     "name": "cash-out-gaming-e-sports-arena",
     "version": "1.0.0",
-    "description": "#1 Place to Play.",
+    "description": "The #1 place to play and cash out in the world of E-Sports.",
     "main": "index.js",
     "scripts": {
     "start": "node index.js",
-    "test": "mocha"
-    },
+    "dev": "nodemon index.js",
+    "test": "mocha --recursive ./test",
+    "lint": "eslint .",
+    "build": "webpack --mode production",
+    "precommit": "npm run lint && npm test"
+},
     "dependencies": {
     "express": "^4.17.1",
-    "another-package": "^2.0.0"
+    "dotenv": "^8.2.0",
+    "mongoose": "^5.13.7",
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "helmet": "^4.6.0",
+    "morgan": "^1.10.0"
     },
     "devDependencies": {
     "mocha": "^9.0.0",
-    "chai": "^4.3.4"
+    "chai": "^4.3.4",
+    "nodemon": "^2.0.15",
+    "eslint": "^8.0.0",
+    "eslint-config-airbnb": "^18.2.1",
+    "eslint-plugin-import": "^2.24.2",
+    "eslint-plugin-node": "^11.1.0",
+    "webpack": "^5.64.4",
+    "webpack-cli": "^4.9.1"
     },
     "repository": {
     "type": "git",
     "url": "git+https://github.com/jonvthvn90/Cash-Out-Gaming-Website.git"
     },
-    "keywords": ["node", "express", "example"],
-    "author": "Your Name <email@example.com> (https://example.com)",
+    "keywords": [
+    "node",
+    "express",
+    "e-sports",
+    "gaming",
+    "cash-out"
+    ],
+    "author": "Your Name",
     "license": "MIT",
     "bugs": {
     "url": "https://github.com/jonvthvn90/Cash-Out-Gaming-Website/issues"
     },
-    "homepage": "https://github.com/jonvthvn90/Cash-Out-Gaming-Website",
+    "homepage": "https://github.com/jonvthvn90/Cash-Out-Gaming-Website#readme",
     "engines": {
     "node": ">=14.0.0"
     },
-    "private": false,
-    "browser": {
-    "fs": false
-    },
-    "files": [
-    "lib",
-    "dist"
-    ],
-    "config": {
-    "commitizen": {
-        "path": "./node_modules/cz-conventional-changes"
-    }
-    },
-    " Husky": {
+    "husky": {
     "hooks": {
-        "pre-commit": "npm test"
+        "pre-commit": "npm run precommit"
     }
     },
-    "lint-staged": {
-    "*.js": ["npm run lint", "git add"]
-    },
+    "browserslist": [
+    "> 0.5%",
+    "last 2 versions",
+    "not dead"
+    ],
     "babel": {
     "presets": ["@babel/preset-env"]
     },
     "eslintConfig": {
-    "extends": ["eslint:recommended", "plugin:node/recommended"]
+    "extends": ["airbnb", "plugin:node/recommended"],
+    "env": {
+        "browser": true,
+        "node": true,
+        "mocha": true
     },
-    "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead"
-    ]
-}
+      "rules": {
+        "quotes": [2, "single"],
+        "no-console": "off"
+    }
+    }
+  }

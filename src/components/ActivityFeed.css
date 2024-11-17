@@ -5,12 +5,25 @@
     padding: 20px;
     max-width: 1200px; /* Wider for better display */
     margin: auto;
+    /* Add a neon effect to the entire feed */
+    box-shadow: 0 0 5px #00ff00;
 }
 
 .activity-feed h1 {
     text-align: center;
     color: #00ff00; /* Neon green for headers */
     text-shadow: 2px 2px #000; /* Shadow for text emphasis */
+    font-size: 2em;
+    animation: flicker 3s infinite alternate;
+}
+
+@keyframes flicker {
+    0%, 18%, 22%, 25%, 53%, 57%, 100% {
+        text-shadow: 2px 2px 1px #000, 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 15px #00ff00;
+    }
+    20%, 24%, 55% {        
+        text-shadow: none;
+    }    
 }
 
 .new-post-form {
@@ -21,13 +34,18 @@
     margin-top: 20px;
 }
 
-.post-content, .media-type-select, .media-url {
+.new-post-form input[type="text"],
+.new-post-form textarea,
+.new-post-form select {
     background-color: #000;
     color: #00ff00; /* Neon green text */
     border: 1px solid #ffd700; /* Gold border */
     padding: 10px;
     font-size: 16px;
     margin-bottom: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    font-family: 'Press Start 2P', cursive;
 }
 
 .post-button {
@@ -38,11 +56,13 @@
     padding: 10px 20px;
     font-size: 16px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
+    font-family: 'Press Start 2P', cursive;
 }
 
 .post-button:hover {
     background-color: #00cc00; /* Darker green on hover */
+    transform: scale(1.05); /* Slight scaling effect for interactivity */
 }
 
 .post {
@@ -52,28 +72,32 @@
     padding: 15px;
     margin-bottom: 20px;
     box-shadow: 0 0 10px #00ff00; /* Green glow effect */
+    overflow: hidden;
 }
 
 .post-header {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     margin-bottom: 10px;
 }
 
 .post-author {
     font-weight: bold;
-    color: #ffd700; /* Gold color for the author name/*
-    }
+    color: #ffd700; /* Gold color for the author name */
+}
 
 .post-date {
     font-size: 0.9em;
     color: #999;
+    font-style: italic;
 }
 
 .post-content {
     margin-bottom: 15px;
     font-size: 1em;
     line-height: 1.5;
+    color: #00ff00;
 }
 
 .post-media {
@@ -84,12 +108,10 @@
     box-shadow: 0 0 5px #00ff00; /* Glow effect for media */
 }
 
-video.post-media {
-    width: 100%;
-}
-
+video.post-media,
 audio.post-media {
     width: 100%;
+    background-color: #1c1c1c;
 }
 
 /* Add some effects for a more dynamic feel */
@@ -100,4 +122,25 @@ audio.post-media {
 
 .post:hover {
     animation: glow 1s infinite alternate;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 600px) {
+    .activity-feed {
+        padding: 10px;
+    }
+
+    .new-post-form,
+    .post {
+        padding: 10px;
+    }
+
+    .post-header {
+        flex-direction: column;
+        align-items: start;
+    }
+
+    .post-author {
+        margin-bottom: 5px;
+    }
 }

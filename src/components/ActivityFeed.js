@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import './ActivityFeed.css';
+import './ActivityFeed.css'; 
 
 import Post from './Post';
 import NewPostForm from './NewPostForm';
@@ -31,9 +31,7 @@ const ActivityFeed = () => {
     const handleNewPost = async (newPost) => {
         try {
             const response = await axios.post('/api/posts', newPost);
-            // Add the new post to the beginning of the posts array
             setPosts([response.data, ...posts]);
-            // Hide the form after posting
             setIsFormVisible(false);
         } catch (error) {
             setError('Failed to create new post');
@@ -53,7 +51,7 @@ const ActivityFeed = () => {
             {isFormVisible && <NewPostForm onSubmit={handleNewPost} />}
             <div className="posts">
                 {posts.map(post => (
-                    <Post key={post._id} post={post} />
+                    <Post key={post.id} post={post} />
                 ))}
             </div>
         </div>

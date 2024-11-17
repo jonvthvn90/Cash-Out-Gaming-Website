@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const socketIo = require('socket.io');
+
+// Initialize Express app
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -13,12 +15,18 @@ const io = socketIo(server, {
     }
 });
 
-// Middleware
+// Middleware setup
 app.use(cors());
 app.use(bodyParser.json());
 
 // Database Connection
-mongoose.connect('mongodb://localhost/yourDatabaseName', { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect('mongodb://localhost/yourDatabaseName', { 
+    useNewUrlParser: true, 
+    useUnifiedTopology: true,
+    useCreateIndex: true,
+    useFindAndModify: false // These options might be deprecated in newer versions of Mongoose
+});
+
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 db.once('open', () => {
@@ -26,9 +34,9 @@ db.once('open', () => {
 });
 
 // Models
-const User = require('../models/User');
-const Match = require('../models/Match');
-const Achievement = require('./models/Achievement'); // Add this line for achievements
+require('../models/User');
+require('../models/Match');
+require('./models/Achievement'); // Ensure the path to Achievement model is correct
 
 let connectedClients = [];
 
@@ -60,30 +68,30 @@ io.on('connection', (socket) => {
     });
 
     socket.on('challengeResponse', ({ challengeId, response }) => {
-        // Here you would update the challenge in the database
-        // Assuming you have a function to update challenge status
         updateChallengeStatusInDB(challengeId, response).then(updatedChallenge => {
-            io.to(updatedChallenge.challenger).emit('challengeStatusUpdated', updatedChallenge);
-            io.to(updatedChallenge.opponent).emit('challengeStatusUpdated', updatedChallenge);
-        });
+            if (updatedChallenge) {
+                io.to(updatedChallenge.challenger.toString()).emit('challengeStatusUpdated', updatedChallenge);
+                io.to(updatedChallenge.opponent.toString()).emit('challengeStatusUpdated', updatedChallenge);
+            }
+        }).catch(error => console.error('Error updating challenge status:', error));
     });
 
     // Tournament updates
     socket.on('tournamentUpdate', (tournament) => {
         tournament.players.forEach(playerId => {
-            io.to(playerId).emit('tournamentUpdate', tournament);
+            io.to(playerId.toString()).emit('tournamentUpdate', tournament);
         });
     });
 
     // Financial transaction notifications
     socket.on('financialTransaction', ({ userId, message }) => {
-        io.to(userId).emit('transactionNotification', message);
+        io.to(userId.toString()).emit('transactionNotification', message);
     });
 
     // Chat messages
     socket.on('chatMessage', (data) => {
         const { matchId, message, userId } = data;
-        io.to(`chat_${matchId}`).emit('chatMessage', { message, userId });
+        sendChatMessage(matchId, message, userId);
     });
 
     // Disconnection
@@ -103,13 +111,12 @@ function sendChatMessage(matchId, message, userId) {
     io.to(`chat_${matchId}`).emit('chatMessage', { message, userId });
 }
 
-// This function could be called from other parts of your application
 async function updateMatchStatus(matchId, status, score) {
     try {
         const match = await Match.findByIdAndUpdate(matchId, {
             status: status,
             score: score
-        }, { new: true });
+        }, { new: true, runValidators: true });
         if (match) {
             broadcastMatchUpdate(matchId, { status: match.status, score: match.score });
         }
@@ -118,15 +125,25 @@ async function updateMatchStatus(matchId, status, score) {
     }
 }
 
+// Example function to update challenge status in the database
+async function updateChallengeStatusInDB(challengeId, status) {
+    try {
+        const challenge = await Challenge.findByIdAndUpdate(challengeId, { status }, { new: true });
+        return challenge;
+    } catch (error) {
+        throw error;
+    }
+}
+
 // Routes
-app.use('/api/users', require('./users'));
+app.use('/api/users', require('./routes/users'));
 app.use('/api/matches', require('./routes/matches'));
-app.use('/api/challenges', require('./challenges'));
-app.use('/api/tournaments', require('./tournaments'));
-app.use('/api/bets', require('./bets'));
-app.use('/api/predictions', require('./predictions'));
-app.use('/api/admin', require('./admin'));
-app.use('/api/achievements', require('./achievements')); // Add this route for achievements
+app.use('/api/challenges', require('./routes/challenges'));
+app.use('/api/tournaments', require('./routes/tournaments'));
+app.use('/api/bets', require('./routes/bets'));
+app.use('/api/predictions', require('./routes/predictions'));
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/achievements', require('./routes/achievements'));
 
 const PORT = process.env.PORT || 8000;
 

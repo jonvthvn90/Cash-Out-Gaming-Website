@@ -3,16 +3,27 @@ const router = express.Router();
 const Referral = require('../models/Referral');
 const User = require('../models/User');
 
+// Generate a referral code
+function generateReferralCode() {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+}
+
 // Create a referral link
 router.post('/generate', async (req, res) => {
     try {
-        // Assuming you want to generate a unique code for each referral
         const referrer = req.user._id;
-        const referralCode = generateReferralCode(); // You need to implement this function
+        const referralCode = generateReferralCode();
 
         const referral = new Referral({
             referrer: referrer,
-            reward: 50 // Example reward amount
+            referralCode: referralCode, // This was missing in the original code
+            reward: 50, // Example reward amount
+            status: 'pending' // Set initial status to pending
         });
 
         await referral.save();
@@ -21,12 +32,6 @@ router.post('/generate', async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 });
-
-// Function to generate a referral code (needs to be implemented)
-function generateReferralCode() {
-    // Implement logic to create a unique code
-    return 'RANDOMCODE';
-}
 
 // Use a referral link
 router.post('/use/:code', async (req, res) => {
@@ -38,11 +43,10 @@ router.post('/use/:code', async (req, res) => {
             return res.status(404).json({ message: 'Invalid or already used referral code' });
         }
 
-        // Assuming the referee is the currently logged in user
         referral.referee = req.user._id;
         referral.status = 'approved';
 
-        // Assign rewards (implement reward logic)
+        // Assign rewards
         await assignReferralRewards(referral);
 
         await referral.save();
@@ -67,11 +71,18 @@ async function assignReferralRewards(referral) {
 router.get('/stats', async (req, res) => {
     try {
         const referrals = await Referral.find({ referrer: req.user._id }).populate('referee', 'username');
-        res.json({ 
+        const stats = {
             totalReferrals: referrals.length,
             successfulReferrals: referrals.filter(r => r.status === 'approved').length,
-            referrals
-        });
+            pendingReferrals: referrals.filter(r => r.status === 'pending').length,
+            referrals: referrals.map(r => ({
+                code: r.referralCode,
+                status: r.status,
+                refereeUsername: r.referee ? r.referee.username : 'Pending',
+                reward: r.reward
+            }))
+        };
+        res.json(stats);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

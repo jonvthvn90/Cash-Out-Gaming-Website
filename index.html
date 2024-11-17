@@ -4,7 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cash Out Gaming</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            text-align: center;
+            padding: 20px;
+            background-color: #222;
+        }
+        .neon-text {
+            color: #fff;
+            text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00, 0 0 40px #00ff00;
+        }
+        .game-nav ul {
+            padding: 0;
+        }
+        .game-nav li {
+            display: inline;
+            margin: 0 15px;
+        }
+        .neon-button {
+            color: #fff;
+            text-decoration: none;
+            padding: 8px 16px;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        .neon-button:hover {
+            background-color: #00ff00;
+            color: #000;
+        }
+        .section {
+            padding: 40px;
+            text-align: center;
+        }
+        .banner {
+            background-image: url('path/to/your/cashoutgaming-banner.jpg');
+            background-size: cover;
+            background-position: center;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            font-size: 2em;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        input, textarea {
+            margin: 10px 0;
+            padding: 10px;
+            width: 300px;
+        }
+        .submit-button {
+            background-color: #00ff00;
+            color: black;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+    </style>
     <script src="script.js" defer></script>
 </head>
 <body>
@@ -14,18 +83,28 @@
             <ul>
                 <li><a href="#home" class="neon-button">Home</a></li>
                 <li><a href="#about" class="neon-button">About</a></li>
+                <li><a href="#features" class="neon-button">Features</a></li>
                 <li><a href="#contact" class="neon-button">Contact</a></li>
             </ul>
         </nav>
     </header>
     <main>
-        <section id="home" class="section">
+        <section id="home" class="section banner">
             <h2>Welcome to Cash Out Gaming</h2>
             <p>Experience the thrill of gaming like never before.</p>
         </section>
         <section id="about" class="section">
             <h2>About Us</h2>
             <p>We're at the forefront of gaming innovation, bringing you the latest in gaming technology and experiences.</p>
+        </section>
+        <section id="features" class="section">
+            <h2>Our Features</h2>
+            <ul>
+                <li>Real-time multiplayer gaming</li>
+                <li>Cash out your winnings instantly</li>
+                <li>Wide selection of games</li>
+                <li>Secure and fair gameplay</li>
+            </ul>
         </section>
         <section id="contact" class="section">
             <h2>Get in Touch</h2>
@@ -38,7 +117,7 @@
         </section>
     </main>
     <footer>
-        <p>&copy; 2024 Cash Out Gaming. All rights reserved.</p>
+        <p>© 2024 Cash Out Gaming. All rights reserved.</p>
     </footer>
 </body>
 </html>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
-import { UserProvider } from './context/UserContext';
-import { MatchProvider } from './context/MatchContext'; // Assuming you have a MatchContext
+import { UserProvider, useUser } from './context/UserContext';
+import { MatchProvider } from './context/MatchContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './components/Home';
@@ -38,9 +38,7 @@ const ProtectedRoute = ({ component: Component, adminOnly = false, ...rest }) =>
                 (isAuthenticated && (!adminOnly || (adminOnly && isAdmin))) ? (
                     <Component {...props} />
                 ) : (
-                    isAuthenticated ? 
-                        <Redirect to="/" /> :
-                        <Redirect to="/login" />
+                    <Redirect to={isAuthenticated ? "/" : "/login"} />
                 )
             }
         />
@@ -72,6 +70,7 @@ function App() {
                                 <ProtectedRoute path="/predict-match" component={MatchPrediction} />
                                 <ProtectedRoute path="/admin" component={AdminDashboard} adminOnly={true} />
                                 <ProtectedRoute path="/store" component={Store} />
+                                <ProtectedRoute path="/activity-feed" component={ActivityFeed} />
                                 <ProtectedRoute path="/chat" exact component={ChatList} />
                                 <ProtectedRoute path="/chat/:roomId" component={ChatRoom} />
                                 <ProtectedRoute path="/bet" component={BettingPage} />

@@ -7,27 +7,9 @@ const AdminDashboard = () => {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
     const { user } = useUser();
-    const [matchData, setMatchData] = useState({
-        teamA: '',
-        teamB: '',
-        game: '',
-        scheduledAt: ''
-    });
-    const [tournamentData, setTournamentData] = useState({
-        name: '',
-        game: '',
-        entryFee: 0,
-        prizePool: 0,
-        startDate: '',
-        endDate: ''
-    });
-    const [productData, setProductData] = useState({
-        name: '',
-        description: '',
-        price: 0,
-        type: 'skin',
-        stock: -1
-    });
+    const [matchData, setMatchData] = useState({ teamA: '', teamB: '', game: '', scheduledAt: '' });
+    const [tournamentData, setTournamentData] = useState({ name: '', game: '', entryFee: 0, prizePool: 0, startDate: '', endDate: '' });
+    const [productData, setProductData] = useState({ name: '', description: '', price: 0, type: 'skin', stock: -1 });
 
     useEffect(() => {
         fetchUsers();
@@ -46,58 +28,40 @@ const AdminDashboard = () => {
         }
     };
 
-    const createMatch = async (matchData) => {
+    const createMatch = async (e) => {
+        e.preventDefault();
         try {
             await axios.post('/api/admin/matches', matchData, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             alert('Match created successfully!');
-            // Reset form data
-            setMatchData({
-                teamA: '',
-                teamB: '',
-                game: '',
-                scheduledAt: ''
-            });
+            setMatchData({ teamA: '', teamB: '', game: '', scheduledAt: '' });
         } catch (error) {
             setError(error.response?.data?.message || 'An error occurred creating the match');
         }
     };
 
-    const createTournament = async (tournamentData) => {
+    const createTournament = async (e) => {
+        e.preventDefault();
         try {
             await axios.post('/api/admin/tournaments', tournamentData, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             alert('Tournament created successfully!');
-            // Reset form data
-            setTournamentData({
-                name: '',
-                game: '',
-                entryFee: 0,
-                prizePool: 0,
-                startDate: '',
-                endDate: ''
-            });
+            setTournamentData({ name: '', game: '', entryFee: 0, prizePool: 0, startDate: '', endDate: '' });
         } catch (error) {
             setError(error.response?.data?.message || 'An error occurred creating the tournament');
         }
     };
 
-    const addProduct = async (productData) => {
+    const addProduct = async (e) => {
+        e.preventDefault();
         try {
             await axios.post('/api/admin/products', productData, {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             alert('Product added successfully!');
-            // Reset form data
-            setProductData({
-                name: '',
-                description: '',
-                price: 0,
-                type: 'skin',
-                stock: -1
-            });
+            setProductData({ name: '', description: '', price: 0, type: 'skin', stock: -1 });
         } catch (error) {
             setError(error.response?.data?.message || 'An error occurred adding the product');
         }
@@ -120,10 +84,7 @@ const AdminDashboard = () => {
 
             <section>
                 <h3>Match Management</h3>
-                <form onSubmit={(e) => {
-                    e.preventDefault();
-                    createMatch(matchData);
-                }}>
+                <form onSubmit={createMatch}>
                     <input 
                         value={matchData.teamA} 
                         onChange={(e) => setMatchData({ ...matchData, teamA: e.target.value })} 
@@ -143,9 +104,9 @@ const AdminDashboard = () => {
                         required 
                     />
                     <input 
+                        type="datetime-local" 
                         value={matchData.scheduledAt} 
                         onChange={(e) => setMatchData({ ...matchData, scheduledAt: e.target.value })} 
-                        type="datetime-local" 
                         required 
                     />
                     <button type="submit">Create Match</button>
@@ -154,10 +115,7 @@ const AdminDashboard = () => {
 
             <section>
                 <h3>Tournament Management</h3>
-                <form onSubmit={(e) => {
-                    e.preventDefault();
-                    createTournament(tournamentData);
-                }}>
+                <form onSubmit={createTournament}>
                     <input 
                         value={tournamentData.name} 
                         onChange={(e) => setTournamentData({ ...tournamentData, name: e.target.value })} 
@@ -173,25 +131,25 @@ const AdminDashboard = () => {
                     <input 
                         type="number" 
                         value={tournamentData.entryFee} 
-                        onChange={(e) => setTournamentData({ ...tournamentData, entryFee: e.target.value })}
+                        onChange={(e) => setTournamentData({ ...tournamentData, entryFee: e.target.value })} 
                         placeholder="Entry Fee" 
                     />
                     <input 
                         type="number" 
                         value={tournamentData.prizePool} 
-                        onChange={(e) => setTournamentData({ ...tournamentData, prizePool: e.target.value })}
+                        onChange={(e) => setTournamentData({ ...tournamentData, prizePool: e.target.value })} 
                         placeholder="Prize Pool" 
                     />
                     <input 
+                        type="datetime-local" 
                         value={tournamentData.startDate} 
                         onChange={(e) => setTournamentData({ ...tournamentData, startDate: e.target.value })} 
-                        type="datetime-local" 
                         required 
                     />
                     <input 
+                        type="datetime-local" 
                         value={tournamentData.endDate} 
                         onChange={(e) => setTournamentData({ ...tournamentData, endDate: e.target.value })} 
-                        type="datetime-local" 
                         required 
                     />
                     <button type="submit">Create Tournament</button>
@@ -200,10 +158,7 @@ const AdminDashboard = () => {
 
             <section>
                 <h3>Store Management</h3>
-                <form onSubmit={(e) => {
-                    e.preventDefault();
-                    addProduct(productData);
-                }}>
+                <form onSubmit={addProduct}>
                     <input 
                         value={productData.name} 
                         onChange={(e) => setProductData({ ...productData, name: e.target.value })} 
@@ -214,6 +169,7 @@ const AdminDashboard = () => {
                         value={productData.description} 
                         onChange={(e) => setProductData({ ...productData, description: e.target.value })} 
                         placeholder="Description" 
+                        required 
                     />
                     <input 
                         type="number" 
@@ -224,7 +180,8 @@ const AdminDashboard = () => {
                     />
                     <select 
                         value={productData.type} 
-                        onChange={(e) => setProductData({ ...productData, type: e.target.value })}>
+                        onChange={(e) => setProductData({ ...productData, type: e.target.value })} 
+                    >
                         <option value="skin">Skin</option>
                         <option value="badge">Badge</option>
                         <option value="advantage">Advantage</option>

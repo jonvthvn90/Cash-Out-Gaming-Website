@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // Assuming you're routing with react-router
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
+import PropTypes from 'prop-types';
 
 const ChatList = () => {
     const [chatRooms, setChatRooms] = useState([]);
@@ -11,8 +12,10 @@ const ChatList = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetchChatRooms();
-    }, []);
+        if (user) {
+            fetchChatRooms();
+        }
+    }, [user]);
 
     const fetchChatRooms = async () => {
         try {
@@ -29,24 +32,35 @@ const ChatList = () => {
     };
 
     const openChatRoom = (roomId) => {
-        // Logic to open or navigate to the chat room, e.g., using React Router
-        navigate(`/chat/${roomId}`); // Assuming you have a route setup for this
+        navigate(`/chat/${roomId}`);
     };
 
+    if (!user) return <div>Please log in to view chat rooms.</div>;
     if (loading) return <div>Loading chat rooms...</div>;
-    if (error) return <div>{error}</div>;
+    if (error) return <div className="error">Error: {error}</div>;
 
     return (
         <div className="chat-list">
             <h2>Chats</h2>
-            {chatRooms.map(room => (
-                <div key={room._id} onClick={() => openChatRoom(room._id)}>
-                    <h3>{room.name}</h3>
-                    <p>{room.lastMessage ? room.lastMessage.content : 'No messages yet'}</p>
-                </div>
-            ))}
+            {chatRooms.length === 0 ? (
+                <p>No chat rooms available.</p>
+            ) : (
+                chatRooms.map(room => (
+                    <div key={room._id} className="chat-room" onClick={() => openChatRoom(room._id)}>
+                        <h3>{room.name}</h3>
+                        <p className="last-message">{room.lastMessage ? room.lastMessage.content : 'No messages yet'}</p>
+                    </div>
+                ))
+            )}
         </div>
     );
+};
+
+ChatList.propTypes = {
+    user: PropTypes.shape({
+        _id: PropTypes.string.isRequired,
+        // Include other user properties here as needed
+    })
 };
 
 export default ChatList;

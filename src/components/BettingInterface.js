@@ -30,11 +30,20 @@ const BettingInterface = ({ matchId }) => {
         }
 
         try {
-            const response = await axios.post(`/api/matches/${matchId}/bet`, { amount, predictedWinner });
-            setBetPlaced(true);
+            // Make sure the amount is a number before sending
+            const betData = { amount: Number(amount), predictedWinner };
+            const response = await axios.post(`/api/matches/${matchId}/bet`, betData);
+            
+            // Assuming the server responds with a success message or status
+            if (response.status === 201 || response.status === 200) {
+                setBetPlaced(true);
+                setError(null); // Clear any previous errors
+            } else {
+                throw new Error('Unexpected response from server');
+            }
         } catch (error) {
             if (error.response) {
-                setError(error.response.data.message);
+                setError(error.response.data.message || 'Unexpected server response');
             } else {
                 setError('An error occurred while placing your bet');
             }

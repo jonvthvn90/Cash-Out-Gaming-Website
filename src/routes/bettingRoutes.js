@@ -5,7 +5,7 @@ const Bet = require('../models/Bet');
 const User = require('../models/User');
 const authMiddleware = require('../middleware/authMiddleware');
 
-router.use(authMiddleware); // Ensure all routes in this file require authentication
+router.use(authMiddleware); // All routes in this file require authentication
 
 // Route to place a bet
 router.post('/:matchId/bet', async (req, res) => {
@@ -16,7 +16,8 @@ router.post('/:matchId/bet', async (req, res) => {
         }
 
         const { amount, predictedWinner } = req.body;
-        if (![1, 5, 10].includes(amount) || !match.participants.includes(predictedWinner)) {
+        const validAmounts = [1, 5, 10];
+        if (!validAmounts.includes(amount) || !match.participants.includes(predictedWinner)) {
             return res.status(400).json({ message: 'Invalid bet amount or predicted winner' });
         }
 
@@ -25,19 +26,31 @@ router.post('/:matchId/bet', async (req, res) => {
             return res.status(400).json({ message: 'Insufficient balance' });
         }
 
-        const bet = new Bet({
-            user: req.user._id,
-            match: match._id,
-            amount,
-            predictedWinner
-        });
+        const session = await User.startSession();
+        session.startTransaction();
 
-        const savedBet = await bet.save();
+        try {
+            const bet = new Bet({
+                user: req.user._id,
+                match: match._id,
+                amount,
+                predictedWinner
+            });
 
-        // Deduct from user's balance
-        await User.findByIdAndUpdate(req.user._id, { $inc: { balance: -amount } });
+            const savedBet = await bet.save({ session });
 
-        res.status(201).json({ message: 'Bet placed successfully', bet: savedBet });
+            // Deduct from user's balance
+            await User.findByIdAndUpdate(req.user._id, { $inc: { balance: -amount } }, { session });
+
+            await session.commitTransaction();
+            session.endSession();
+
+            res.status(201).json({ message: 'Bet placed successfully', bet: savedBet });
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw error;
+        }
     } catch (error) {
         res.status(500).json({ message: 'An error occurred while placing the bet', error: error.message });
     }
@@ -57,24 +70,41 @@ router.post('/:matchId/resolve', async (req, res) => {
             return res.json({ message: 'No bets to resolve' });
         }
 
-        const winningBets = bets.filter(bet => bet.predictedWinner === match.winner);
-        const losingBets = bets.filter(bet => bet.predictedWinner !== match.winner);
+        const winningBets = bets.filter(bet => bet.predictedWinner === req.body.winner);
+        const losingBets = bets.filter(bet => bet.predictedWinner !== req.body.winner);
 
-        const totalPot = bets.reduce((sum, bet) => sum + bet.amount, 0);
-        const winningsPerBet = totalPot / winningBets.length || 0;
-
-        // Update winning bets status to 'won' and credit winnings
-        for (const bet of winningBets) {
-            await Bet.findByIdAndUpdate(bet._id, { status: 'won' });
-            await User.findByIdAndUpdate(bet.user, { $inc: { balance: winningsPerBet } });
+        let totalPot = 0;
+        for (let bet of bets) {
+            totalPot += bet.amount;
         }
 
-        // Update losing bets status to 'lost'
-        for (const bet of losingBets) {
-            await Bet.findByIdAndUpdate(bet._id, { status: 'lost' });
-        }
+        const winningsPerBet = totalPot > 0 ? totalPot / winningBets.length : 0;
 
-        res.json({ message: 'Bets resolved successfully' });
+        // Use a transaction to ensure atomicity when resolving bets
+        const session = await User.startSession();
+        session.startTransaction();
+
+        try {
+            // Update winning bets and credit winnings
+            for (const bet of winningBets) {
+                await Bet.findByIdAndUpdate(bet._id, { status: 'won' }, { session });
+                await User.findByIdAndUpdate(bet.user, { $inc: { balance: winningsPerBet } }, { session });
+            }
+
+            // Update losing bets status
+            for (const bet of losingBets) {
+                await Bet.findByIdAndUpdate(bet._id, { status: 'lost' }, { session });
+            }
+
+            await session.commitTransaction();
+            session.endSession();
+
+            res.json({ message: 'Bets resolved successfully', winningsPerBet: winningsPerBet.toFixed(2) });
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw error;
+        }
     } catch (error) {
         res.status(500).json({ message: 'An error occurred while resolving the bets', error: error.message });
     }

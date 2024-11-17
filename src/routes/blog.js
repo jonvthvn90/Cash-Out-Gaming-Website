@@ -8,12 +8,14 @@ router.use(authMiddleware);
 // Create a new blog post (admin only)
 router.post('/', async (req, res) => {
     try {
-        const { title, content, tags } = req.body;
+        const { title, content, tags, published = false } = req.body;
+        // Assuming there's a middleware check for admin rights
         const blogPost = new BlogPost({
             title,
             content,
             author: req.user._id,
-            tags: tags ? tags.split(',').map(tag => tag.trim()) : []
+            tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
+            published
         });
         await blogPost.save();
         res.status(201).json({ message: 'Blog post created successfully', blogPost });
@@ -30,7 +32,9 @@ router.get('/', async (req, res) => {
             query.tags = { $in: [req.query.tag] };
         }
 
-        const blogPosts = await BlogPost.find(query).populate('author', 'username').sort({ createdAt: -1 });
+        const blogPosts = await BlogPost.find(query)
+            .populate('author', 'username')
+            .sort({ createdAt: -1 });
         res.json({ blogPosts });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -40,8 +44,11 @@ router.get('/', async (req, res) => {
 // Get a specific blog post by ID (public)
 router.get('/:postId', async (req, res) => {
     try {
-        const blogPost = await BlogPost.findById(req.params.postId).populate('author', 'username');
-        if (!blogPost || !blogPost.published) return res.status(404).json({ message: 'Blog post not found' });
+        const blogPost = await BlogPost.findById(req.params.postId)
+            .populate('author', 'username');
+        if (!blogPost || (blogPost.published === false && req.user.role !== 'admin')) {
+            return res.status(404).json({ message: 'Blog post not found or not published' });
+        }
         res.json({ blogPost });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -52,14 +59,22 @@ router.get('/:postId', async (req, res) => {
 router.put('/:postId', async (req, res) => {
     try {
         const { title, content, tags, published } = req.body;
-        const updatedBlogPost = await BlogPost.findByIdAndUpdate(req.params.postId, {
-            title,
-            content,
-            tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
-            published,
-            updatedAt: Date.now()
-        }, { new: true, runValidators: true });
-        if (!updatedBlogPost) return res.status(404).json({ message: 'Blog post not found' });
+        // Assuming there's a middleware check for admin rights
+        const updatedBlogPost = await BlogPost.findByIdAndUpdate(
+            req.params.postId, 
+            {
+                title,
+                content,
+                tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
+                published: published !== undefined ? published : undefined,
+                updatedAt: Date.now()
+            }, 
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedBlogPost) {
+            return res.status(404).json({ message: 'Blog post not found' });
+        }
         res.json({ message: 'Blog post updated successfully', blogPost: updatedBlogPost });
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -69,8 +84,11 @@ router.put('/:postId', async (req, res) => {
 // Delete a blog post (admin only)
 router.delete('/:postId', async (req, res) => {
     try {
+        // Assuming there's a middleware check for admin rights
         const blogPost = await BlogPost.findByIdAndDelete(req.params.postId);
-        if (!blogPost) return res.status(404).json({ message: 'Blog post not found' });
+        if (!blogPost) {
+            return res.status(404).json({ message: 'Blog post not found' });
+        }
         res.json({ message: 'Blog post deleted successfully', blogPost });
     } catch (error) {
         res.status(500).json({ message: error.message });

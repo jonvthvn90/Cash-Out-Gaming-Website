@@ -5,57 +5,81 @@ const ChallengeSchema = new Schema({
     challenger: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: [true, 'A challenger must be specified']
     },
     challengee: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: [true, 'A challengee must be specified']
     },
     game: {
         type: String,
-        required: true,
-        trim: true
+        required: [true, 'A game must be specified for the challenge'],
+        trim: true,
+        enum: ['chess', 'checkers', 'backgammon', 'poker', 'tic-tac-toe', 'go'] // Assuming a set of supported games
     },
     status: {
         type: String,
         enum: ['pending', 'accepted', 'rejected', 'completed'],
-        default: 'pending'
+        default: 'pending',
+        index: true // Index for faster status-based queries
     },
     betAmount: {
         type: Number,
         default: 0,
         validate: {
-            validator: Number.isInteger,
-            message: '{VALUE} is not an integer value'
+            validator: function(v) {
+                return v >= 0 && Number.isInteger(v);
+            },
+            message: '{VALUE} is not a valid bet amount'
         }
     },
     winner: {
         type: Schema.Types.ObjectId,
         ref: 'User'
     },
+    result: {
+        type: String,
+        enum: ['win', 'loss', 'draw'],
+        required: function() {
+            return this.status === 'completed';
+        }
+    },
     createdAt: {
         type: Date,
-        default: Date.now
+        default: Date.now,
+        index: true // Index for sorting by creation time
     }
+}, {
+    timestamps: true, // Automatically adds updatedAt field
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+});
+
+// Virtual for URL to this challenge
+ChallengeSchema.virtual('url').get(function() {
+    return `/api/challenges/${this._id}`;
 });
 
 // Middleware to handle challenge acceptance
 ChallengeSchema.pre('findOneAndUpdate', async function(next) {
     const update = this.getUpdate();
     if (update.$set && update.$set.status === 'accepted') {
-        // Assuming you want to transfer betAmount to a hold or escrow
         const challenge = await this.model.findOne(this.getQuery());
         if (challenge && challenge.betAmount > 0) {
-            const challenger = await User.findById(challenge.challenger);
-            const challengee = await User.findById(challenge.challengee);
+            const [challenger, challengee] = await Promise.all([
+                mongoose.model('User').findById(challenge.challenger),
+                mongoose.model('User').findById(challenge.challengee)
+            ]);
 
-            if (challenger.balance < challenge.betAmount || challengee.balance < challenge.betAmount) {
-                throw new Error('Insufficient funds for challenge acceptance');
+            if (!challenger || !challengee || challenger.balance < challenge.betAmount || challengee.balance < challenge.betAmount) {
+                throw new Error('Insufficient funds for challenge acceptance or user not found');
             }
 
-            // Here you would implement logic to hold the bet amount until the match is concluded
-            // For simplicity, let's assume we just have the logic to check if funds are available
+            // Hold the bet amount for both challenger and challengee
+            challenger.balance -= challenge.betAmount;
+            challengee.balance -= challenge.betAmount;
+            await Promise.all([challenger.save(), challengee.save()]);
         }
     }
     next();
@@ -67,18 +91,55 @@ ChallengeSchema.pre('findOneAndUpdate', async function(next) {
     if (update.$set && update.$set.status === 'completed' && update.$set.winner) {
         const challenge = await this.model.findOne(this.getQuery());
         if (challenge && challenge.betAmount > 0) {
-            const winner = await User.findById(update.$set.winner);
-            const loser = await User.findById(challenge.challenger._id === update.$set.winner ? challenge.challengee : challenge.challenger);
+            const winner = await mongoose.model('User').findById(update.$set.winner);
+            const loser = await mongoose.model('User').findById(challenge.challenger.equals(update.$set.winner) ? challenge.challengee : challenge.challenger);
 
-            // Transfer bet amount from the loser to the winner
-            winner.balance += challenge.betAmount * 2; // Winner gets back their bet plus the loser's
-            loser.balance -= challenge.betAmount;
+            if (winner && loser) {
+                // Return the bet amount to the winner and add the loser's bet
+                winner.balance += challenge.betAmount * 2;
+                // Remove the bet amount from the loser
+                loser.balance += challenge.betAmount; // This line assumes the bet was already deducted upon acceptance
 
-            // Update balances
-            await Promise.all([winner.save(), loser.save()]);
+                await Promise.all([winner.save(), loser.save()]);
+            } else {
+                throw new Error('Winner or loser not found');
+            }
         }
     }
     next();
 });
 
-module.exports = mongoose.model('Challenge', ChallengeSchema);
+// Static method to find challenges by user
+ChallengeSchema.statics.findByUser = function(userId) {
+    return this.find({
+        $or: [{ challenger: userId }, { challengee: userId }]
+    }).populate('challenger challengee', 'username skillLevel');
+};
+
+// Static method to find pending challenges
+ChallengeSchema.statics.findPending = function() {
+    return this.find({ status: 'pending' })
+        .populate('challenger challengee', 'username skillLevel');
+};
+
+// Instance method to accept a challenge
+ChallengeSchema.methods.accept = async function() {
+    if (this.status !== 'pending') {
+        throw new Error('Challenge is not in pending state');
+    }
+    this.status = 'accepted';
+    await this.save();
+};
+
+// Instance method to reject a challenge
+ChallengeSchema.methods.reject = async function() {
+    if (this.status !== 'pending') {
+        throw new Error('Challenge is not in pending state');
+    }
+    this.status = 'rejected';
+    await this.save();
+};
+
+const Challenge = mongoose.model('Challenge', ChallengeSchema);
+
+module.exports = Challenge;
